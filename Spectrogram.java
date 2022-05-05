@@ -30,6 +30,7 @@ public class Spectrogram extends Application{
         stage.show();
     }
 
+    static FourierTransform ft=  new FourierTransform(FourierTransform.getAisFromFile("./SoundFile.wav"));
     private Parent createContent()
     {
         Pane root = new Pane();
@@ -40,12 +41,17 @@ public class Spectrogram extends Application{
         chart = new CanvasChart(pen, currentColor, new FunctionDataSource());
 
         AnimationTimer timer = new AnimationTimer(){
+            long initTime = -1;
             @Override
             public void handle(long now)
             {
+                if(initTime == -1){
+                    initTime = now;
+                }
                 pen.clearRect(0, 0, 800, 600);
                 pen.setFill(currentColor);
                 pen.fillRect(150, 300, 500, 1);
+                ft.read(now - initTime);
                 chart.update();
             }
         };
@@ -69,6 +75,7 @@ public class Spectrogram extends Application{
 
         public void update()
         {
+            
             ArrayList<Point> points = dataSource.getValues();
             pen.setStroke(color);
             Double previousX = -1.0;
@@ -94,12 +101,22 @@ public class Spectrogram extends Application{
         @Override
         public ArrayList<Point> getValues()
         {
+            double A0 = 27.5;
             ArrayList<Point> points = new ArrayList<>();
+
+            /*
             for (Double i = 0.0; i < 500; i += 1)
             {
                 points.add(new Point(i, 100 * (Math.sin(2.5 * (i + x)/25) + Math.sin((i + x)/25) + Math.sin(2 * (i + x)/25))));
             }
             x++;
+            return points;
+            */
+
+            for(double i = 100; i <= 600; ++i){
+                points.add(new Point(i - 100, ft.fft(i*100).abs()*1000));
+                //System.out.println(ft.fft(550).abs());
+            }
             return points;
         }
     }
