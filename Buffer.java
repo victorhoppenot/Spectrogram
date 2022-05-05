@@ -22,7 +22,7 @@ public class Buffer {
 
     public void shiftIn(byte b){
         for(int i = 0; i < size - 1; ++i){
-            buffer[i] = buffer[i - 1]; 
+            buffer[i] = buffer[i + 1]; 
         }
         buffer[size - 1] = b;
     }
