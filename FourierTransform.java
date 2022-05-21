@@ -12,78 +12,119 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 import javafx.scene.media.Track;
 
+import java.io.File;
 import java.net.URL;
 
 
 public class FourierTransform {
     final static float SAMPLE_RATE = 44100.0F;
     final static double SAMPLE_TIME = 1.0/SAMPLE_RATE;
+    
 
 
     final static int SAMPLE_SIZE = 8;
 
-    final static int TRANSFORM_SIZE = 128;
+    final static int TRANSFORM_SIZE = 1024;
 
-    final static double TRANSFOM_TIME = 0.5 * SAMPLE_TIME * TRANSFORM_SIZE;  
+    final static double TRANSFORM_TIME = SAMPLE_TIME * TRANSFORM_SIZE;  
 
-    final static AudioFormat FORMAT = new AudioFormat(SAMPLE_RATE, SAMPLE_SIZE,1, true, false);        
+    final static AudioFormat FORMAT = new AudioFormat(SAMPLE_RATE, SAMPLE_SIZE,1, false, true);        
 
     private AudioInputStream stream;
+
 
     int[] buffer = new int[TRANSFORM_SIZE];
     public FourierTransform(AudioInputStream stream){
         this.stream = stream;
     }
+    public FourierTransform(){
+        this.stream = null;
+    }
 
     private long lastReadSample = 0;
+    private double currentTime = 0;
 
     public void reset(){
         lastReadSample = 0;
+        currentTime = 0;
+        buffer = new int[TRANSFORM_SIZE];
     }
 
-    final double NANO = Math.pow(10,-9);
+    final static double NANO = Math.pow(10,-9);
+    final static double MILLI = Math.pow(10,-3);
+
     public long sampleAtTime(long time){
         double t = NANO * time * SAMPLE_RATE;
         long sample = (long) t;
         return sample;
     }
-
     public void read(long time){
+        /*for(int i = 0; i < TRANSFORM_SIZE; ++i){
+            buffer[i]= (int)(128*Math.sin(250*2*Math.PI*(time*NANO + i*SAMPLE_TIME)));
+            currentTime = NANO*time;
+        }*/
+
         try{
             long sample = sampleAtTime(time);
+            
             if(sample < lastReadSample){
                 return;
             }
+            
             stream.skip(sample - lastReadSample);
+
+            lastReadSample = sample;
 
             for(int i = 0; i < TRANSFORM_SIZE; ++i){
                 buffer[i] = stream.read();
+                lastReadSample++;
             }
 
-            lastReadSample += TRANSFORM_SIZE;
         }catch(Exception e){
             //make beter code
-            e.printStackTrace();
+            //e.printStackTrace();
         }
+
+        currentTime = NANO*time;
     }
+
+    public void simulateRead(long time, int[] buffer){
+        long sample = sampleAtTime(time);
+
+        if(sample < lastReadSample){
+            return;
+        }
+
+        lastReadSample = sample;
+
+        this.buffer = buffer.clone();
+
+        currentTime = NANO*time;
+    }
+
 
     public Complex fft(double f){
         Complex sum = Complex.ZERO;
         for(int i = 0; i < TRANSFORM_SIZE; ++i){
-            double n = i * SAMPLE_TIME - TRANSFOM_TIME;
-            Complex sample = new Complex(buffer[i], 0);
+            double n = currentTime + i * SAMPLE_TIME;
+            double v = buffer[i];
+            v = (v - 128)/128.0;
+            v *= Math.sin(i*Math.PI/TRANSFORM_SIZE); //Windowing
+            Complex sample = new Complex(v, 0);
             Complex change = sample.times(
                 new Complex(Math.cos(-2*Math.PI*f*n),Math.sin(-2*Math.PI*f*n))
-            ).times(SAMPLE_TIME);
+            );
             sum = sum.plus(change);
         }   
-        return sum;    
+        //return sum.divides(new Complex(TRANSFORM_SIZE*SAMPLE_TIME,0));    
+        return sum.times(256); 
     }
 
-    public static AudioInputStream getAisFromFile(String url){
+
+    public static AudioInputStream getAisFromFile(File file){
         
         try{
-            URL soundURL = ClassLoader.getSystemResource(url);
+            URL soundURL = file.toURI().toURL();
             AudioInputStream ais = AudioSystem.getAudioInputStream(soundURL);
             return AudioSystem.getAudioInputStream(FORMAT, ais);
         }catch(Exception e){
@@ -94,46 +135,25 @@ public class FourierTransform {
         
     }
 
+    public static void main(String args[]) throws InterruptedException{
 
+        FourierTransform cum = new FourierTransform();
+    
+        long time = 0;
+        while(true){
+            Thread.sleep(10);
+            time += 1000*10*NANO;
 
-
-
-    // static TargetDataLine targetDataLine;
-    // static Mixer.Info[] mixerInfo = AudioSystem.getMixerInfo();
-
-
-    public static void main(String args[]) throws LineUnavailableException, InterruptedException, IOException, UnsupportedAudioFileException{
-        // Mixer mixer_ = AudioSystem.getMixer(mixerInfo[0]);
-
-        // DataLine.Info dataLineInfo = new DataLine.Info(TargetDataLine.class, FORMAT);
-
-        // Mixer mixer = AudioSystem.getMixer(mixerInfo[2]);
-        // targetDataLine = AudioSystem.getTargetDataLine(FORMAT);//(TargetDataLine) mixer.getLine(dataLineInfo);
-        // targetDataLine.open(FORMAT);
-        // targetDataLine.start();
-        
-        // AudioInputStream ai = new AudioInputStream(targetDataLine);
-        // FourierTransform f = new FourierTransform(ai);
-
-        // double test = 440;
-
-        // while(true){
-        //     f.next();
-        //     System.out.println(f.fft(test).phase());
-        //     Thread.sleep(100);
-        // }
-        AudioInputStream ais = getAisFromFile("./SoundFile.wav");
-        boolean go = true;
-        int count = 0;
-        System.out.println(ais.getFormat());
-        while(go){
-            if(ais.read() == -1){
-                go = false;
+            int[] sex = new int[TRANSFORM_SIZE];
+            for(int i = 0; i < TRANSFORM_SIZE; ++i){
+                sex[i] = (int) (128.0*Math.sin(440*Math.PI*(time*NANO + i*SAMPLE_TIME))+128);
             }
-            //System.out.println(cringe[0]);
-            count++;
-            //Thread.sleep(10);
+
+
+            cum.simulateRead(time, sex);
+            System.out.println(cum.fft(440));
         }
-        System.out.println(count);
     }
+
+
 }
