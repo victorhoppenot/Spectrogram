@@ -1,9 +1,9 @@
 import javafx.scene.canvas.GraphicsContext;
 
-public abstract class LogAnimator extends Animator{
+public abstract class LogStyle extends Style{
     private static final double A1 = 55.00;
     
-    public LogAnimator(GraphicsContext pen, FourierTransform ft) {
+    public LogStyle(GraphicsContext pen, FourierTransform ft) {
         super(pen, ft);
     }
 
