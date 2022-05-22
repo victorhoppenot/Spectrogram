@@ -1,29 +1,46 @@
+import java.util.function.BiFunction;
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
-public abstract class Animator extends AnimationTimer{
+public class Animator extends AnimationTimer{
     protected GraphicsContext pen;
     protected FourierTransform ft;
     private long initTime = -1;
+    private long currentTime = 0;
+    private long pausedTime = 0;
+    private boolean pause;
     private Color lineColor = Color.BLACK;
+    private Style style;
+
     public Animator(GraphicsContext pen, FourierTransform ft){
         super();
         this.pen = pen;
         this.ft = ft;
     }
+
+    public void constructStyle(BiFunction<GraphicsContext, FourierTransform, Style> construct){
+        style = construct.apply(pen, ft);
+    }
+
     @Override
-    public final void handle(long now) {
+    public void handle(long now) {
+        if(pause){
+            pausedTime += now - currentTime;
+            pause = false;
+        }
         if(initTime == -1){
             initTime = now;
         }
         pen.clearRect(0, 0, 800, 600);
         pen.setFill(lineColor);
         pen.fillRect(150, 300, 500, 1);
-        ft.read(now - initTime);
-        draw();
+        ft.read(now - initTime - pausedTime);
+        style.draw();
+        currentTime = now;
     }
-
-
-    abstract void draw();
+    public void pause(){
+        stop();
+        pause = true;
+    }
 }
