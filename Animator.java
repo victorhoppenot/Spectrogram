@@ -12,11 +12,13 @@ public class Animator extends AnimationTimer{
     private boolean pause;
     private Color lineColor = Color.BLACK;
     private Style style;
+    private boolean skip;
 
     public Animator(GraphicsContext pen, FourierTransform ft){
         super();
         this.pen = pen;
         this.ft = ft;
+        this.skip = false;
     }
 
     public void constructStyle(BiFunction<GraphicsContext, FourierTransform, Style> construct){
@@ -31,6 +33,11 @@ public class Animator extends AnimationTimer{
         }
         if(initTime == -1){
             initTime = now;
+        }
+        if (skip)
+        {
+            skip = !skip;
+            return;
         }
         pen.clearRect(0, 0, 800, 600);
         pen.setFill(lineColor);
