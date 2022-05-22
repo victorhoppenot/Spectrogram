@@ -19,8 +19,6 @@ import java.net.URL;
 public class FourierTransform {
     final static float SAMPLE_RATE = 44100.0F;
     final static double SAMPLE_TIME = 1.0/SAMPLE_RATE;
-    
-
 
     final static int SAMPLE_SIZE = 8;
 
@@ -88,21 +86,6 @@ public class FourierTransform {
         currentTime = NANO*time;
     }
 
-    public void simulateRead(long time, int[] buffer){
-        long sample = sampleAtTime(time);
-
-        if(sample < lastReadSample){
-            return;
-        }
-
-        lastReadSample = sample;
-
-        this.buffer = buffer.clone();
-
-        currentTime = NANO*time;
-    }
-
-
     public Complex fft(double f){
         Complex sum = Complex.ZERO;
         for(int i = 0; i < TRANSFORM_SIZE; ++i){
@@ -133,26 +116,6 @@ public class FourierTransform {
             return null;
         }
         
-    }
-
-    public static void main(String args[]) throws InterruptedException{
-
-        FourierTransform cum = new FourierTransform();
-    
-        long time = 0;
-        while(true){
-            Thread.sleep(10);
-            time += 1000*10*NANO;
-
-            int[] sex = new int[TRANSFORM_SIZE];
-            for(int i = 0; i < TRANSFORM_SIZE; ++i){
-                sex[i] = (int) (128.0*Math.sin(440*Math.PI*(time*NANO + i*SAMPLE_TIME))+128);
-            }
-
-
-            cum.simulateRead(time, sex);
-            System.out.println(cum.fft(440));
-        }
     }
 
 
