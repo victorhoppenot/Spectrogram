@@ -7,11 +7,12 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.stage.Stage;
 import javafx.scene.layout.BorderPane;
 import java.io.File;
-import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 import javafx.scene.media.*;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.ColorPicker;
 import javafx.scene.control.Menu;
 import javafx.stage.FileChooser;
 /*
@@ -19,10 +20,11 @@ https://www.youtube.com/watch?v=FeDBcKbO29M
 */
 
 public class Spectrogram extends Application{
-    BiConsumer<GraphicsContext,FourierTransform> animator =  Animators::YELLOW_BLUE_3D; 
+    BiFunction<GraphicsContext, FourierTransform, Style> styleConstructor =  Styles::BLACK_LINE; 
     private Stage primary;
     private Canvas canvas;
     private Instance playingInstance;
+    private boolean paused = false;
 
     @Override
     public void start(Stage primary)
@@ -41,7 +43,9 @@ public class Spectrogram extends Application{
             playingInstance.stop();
         }
         playingInstance = new Instance(file, canvas.getGraphicsContext2D());
+        playingInstance.constructStyle(styleConstructor);
         playingInstance.start();
+        paused = false;
     }
 
     private Parent createContent()
@@ -53,6 +57,7 @@ public class Spectrogram extends Application{
         bp.setCenter(canvas);
         return bp;
     }
+
 
     private MenuBar populateMenuBar()
     {
@@ -73,7 +78,56 @@ public class Spectrogram extends Application{
                 ex.printStackTrace();
             }
         });
-        fileMenu.getItems().addAll(openItem);
+
+        MenuItem pause = new MenuItem("Pause/Play");
+        pause.setOnAction(e -> {
+            if(playingInstance != null){
+                if(paused){
+                    playingInstance.unpause();
+                }else{
+                    playingInstance.pause();
+                }
+                paused = !paused;
+
+            }
+        });
+
+
+        fileMenu.getItems().addAll(openItem, pause);
+
+        Menu styleMenu = new Menu("Style");
+        mbar.getMenus().add(styleMenu);
+        
+        for(BiFunction<GraphicsContext, FourierTransform, Style> constructor : Styles.getStyleConstructors()){
+            String name = constructor.apply(null,null).getName();
+            MenuItem style = new MenuItem(name);
+            style.setOnAction(e -> {
+                styleConstructor = constructor;
+                if(playingInstance != null){
+                    playingInstance.constructStyle(styleConstructor);
+                }
+            });
+            styleMenu.getItems().add(style);
+        }
+        Menu colorMenu = new Menu("Solid Color");
+
+        ColorPicker colorssPicker = new ColorPicker();
+        colorssPicker.setStyle("-fx-background-color: white;");
+        MenuItem colorPicker = new MenuItem(null, colorssPicker);
+
+        colorPicker.setOnAction(e ->{
+            styleConstructor = Styles.GenerateSolidStyleConstructor(colorssPicker.getValue());
+            if(playingInstance != null){
+                playingInstance.constructStyle(styleConstructor);
+            }
+        });
+        colorMenu.getItems().add(colorPicker);
+        styleMenu.getItems().add(colorMenu);
+        
+        
+
+
+
         return mbar;
     }
 }
