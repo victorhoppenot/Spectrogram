@@ -35,4 +35,25 @@ public class Animators {
         };
     }
 
+    public static Animator BLACK_LINE(GraphicsContext pen, FourierTransform ft){
+        return new LogAnimator(pen, ft) {
+            double previousX;
+            double previousY;
+            @Override
+            void initFrame() {
+                previousX = -1;
+                previousY = -1;
+            }
+
+            @Override
+            void drawLog(double x, Complex y) {
+                pen.strokeLine(previousX + 150, 300 - previousY, x + 150, 300 - y.abs());
+
+                previousX = x;
+                previousY = y.abs();
+            }
+            
+        };
+    }
+    
 }

@@ -16,7 +16,7 @@ public class Instance {
         Media sound = new Media(file.toURI().toString());
         mp = new MediaPlayer(sound);
         ft = new FourierTransform(FourierTransform.getAisFromFile(file));
-        timer = Animators.YELLOW_BLUE_3D(pen, ft);
+        timer = Animators.BLACK_LINE(pen, ft);
     }
 
     public void start(){

@@ -6,7 +6,7 @@ public abstract class Animator extends AnimationTimer{
     protected GraphicsContext pen;
     protected FourierTransform ft;
     private long initTime = -1;
-    private Color backgroundColor = Color.WHITE;
+    private Color lineColor = Color.BLACK;
     public Animator(GraphicsContext pen, FourierTransform ft){
         super();
         this.pen = pen;
@@ -18,7 +18,7 @@ public abstract class Animator extends AnimationTimer{
             initTime = now;
         }
         pen.clearRect(0, 0, 800, 600);
-        pen.setFill(backgroundColor);
+        pen.setFill(lineColor);
         pen.fillRect(150, 300, 500, 1);
         ft.read(now - initTime);
         draw();
